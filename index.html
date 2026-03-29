@@ -1,1 +1,1111 @@
-.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auditory N-Back Number Series</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#141c36;
+      --panel2:#1c2750;
+      --text:#eef2ff;
+      --muted:#b8c4ea;
+      --accent:#7dd3fc;
+      --good:#4ade80;
+      --warn:#fbbf24;
+      --bad:#fb7185;
+      --line:rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,sans-serif;
+      background:radial-gradient(circle at top,#1a2550 0%,#0b1020 55%), linear-gradient(180deg,#0b1020,#0b1020);
+      color:var(--text);
+      min-height:100vh;
+      padding:18px;
+    }
+    .app{
+      width:min(1460px,100%);
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:400px 1fr;
+      gap:18px;
+    }
+    .card{
+      background:linear-gradient(180deg,var(--panel) 0%,#101730 100%);
+      border:1px solid var(--line);
+      border-radius:22px;
+      box-shadow:0 12px 36px rgba(0,0,0,.28);
+    }
+    .sidebar{
+      padding:20px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      position:sticky;
+      top:18px;
+      height:fit-content;
+    }
+    .title{font-size:1.9rem;font-weight:800;letter-spacing:.01em}
+    .subtitle{color:var(--muted);line-height:1.45;font-size:.95rem}
+    .section,.stat,.message,.pill{
+      background:var(--panel2);
+      border:1px solid var(--line);
+      border-radius:16px;
+    }
+    .section{padding:14px}
+    .section h3{margin:0 0 10px;font-size:1rem}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .stat{padding:14px}
+    .label{color:var(--muted);font-size:.82rem;margin-bottom:6px}
+    .value{font-size:1.35rem;font-weight:800}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .field{margin-bottom:10px}
+    label{display:block;font-size:.84rem;color:var(--muted);margin-bottom:6px}
+    input[type="number"],input[type="range"],select,button{
+      width:100%;
+      border:none;
+      border-radius:12px;
+      padding:12px 14px;
+      font-size:.95rem;
+    }
+    input[type="number"],select{
+      background:#0e1430;
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    input[type="range"]{padding:0;background:transparent}
+    .range-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+    .range-value{min-width:72px;text-align:right;color:var(--accent);font-weight:800;font-size:.9rem}
+    button{cursor:pointer;font-weight:800;background:var(--accent);color:#082032}
+    .secondary{background:#2b3565;color:var(--text)}
+    .danger{background:#7c2d12;color:#fff}
+    .checkbox{display:flex;align-items:center;gap:10px;color:var(--text);font-size:.92rem;margin-top:6px}
+    .checkbox input{width:18px;height:18px}
+    .main{padding:20px;display:flex;flex-direction:column;gap:18px}
+    .topbar{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
+    .pill{padding:10px 14px;color:var(--muted)}
+    .display{
+      display:grid;
+      grid-template-columns:minmax(0,1.2fr) minmax(380px,.8fr);
+      gap:18px;
+      align-items:start;
+    }
+    .panel{
+      background:linear-gradient(180deg,#0c1430 0%,#111a38 100%);
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:18px;
+    }
+    .panel h3{margin:0 0 12px;font-size:1rem}
+    .current-series{
+      min-height:320px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      justify-content:center;
+    }
+    .trial-tag{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      width:fit-content;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+      color:var(--muted);
+      font-size:.88rem;
+    }
+    .series-line{
+      font-size:clamp(1.35rem,2.6vw,2.15rem);
+      font-weight:900;
+      letter-spacing:.05em;
+      line-height:1.25;
+      word-break:break-word;
+    }
+    .reference-box{
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+    }
+    .reference-title{color:var(--muted);font-size:.85rem;margin-bottom:8px}
+    .reference-value{font-size:1rem;font-weight:800;line-height:1.35;word-break:break-word}
+    .history{max-height:680px;overflow:auto;display:flex;flex-direction:column;gap:10px}
+    .history-item{
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      display:grid;
+      grid-template-columns:auto 1fr;
+      gap:10px;
+      align-items:start;
+    }
+    .history-item.current{
+      border-color:rgba(125,211,252,.55);
+      box-shadow:0 0 0 1px rgba(125,211,252,.25) inset;
+    }
+    .history-item.ref{
+      border-color:rgba(167,139,250,.55);
+      box-shadow:0 0 0 1px rgba(167,139,250,.25) inset;
+    }
+    .history-badge{
+      min-width:70px;
+      padding:6px 8px;
+      border-radius:999px;
+      text-align:center;
+      font-size:.78rem;
+      font-weight:800;
+      background:rgba(255,255,255,.06);
+      color:var(--muted);
+    }
+    .history-series{font-size:.97rem;line-height:1.4;word-break:break-word;font-weight:700}
+    .history-meta{font-size:.78rem;color:var(--muted);margin-top:4px;line-height:1.35}
+    .message{padding:14px 16px;min-height:58px;display:flex;align-items:center;color:var(--muted)}
+    .good{color:var(--good);font-weight:700}
+    .warn{color:var(--warn);font-weight:700}
+    .bad{color:var(--bad);font-weight:700}
+    .tiny{font-size:.82rem;color:var(--muted);line-height:1.45}
+    .hidden{display:none!important}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+    @media (max-width:1180px){.display{grid-template-columns:1fr}}
+    @media (max-width:940px){.app{grid-template-columns:1fr}.sidebar{position:static}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar card">
+      <div>
+        <div class="title">Auditory N-Back Series</div>
+        <div class="subtitle">
+          Purely auditory six-number n-back. Matching now uses hard-exclusion ambiguity filtering, parse-set overlap, and no fallback that silently reintroduces ambiguous trials.
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="label">Trial</div><div id="trialCount" class="value">0</div></div>
+        <div class="stat"><div class="label">Remaining</div><div id="remainingCount" class="value">—</div></div>
+        <div class="stat"><div class="label">N-Back</div><div id="nbackStat" class="value">2</div></div>
+        <div class="stat"><div class="label">Pattern</div><div id="patternStat" class="value">Medium</div></div>
+      </div>
+
+      <div class="section">
+        <h3>Session Setup</h3>
+
+        <div class="grid2">
+          <div class="field">
+            <label for="nbackLevel">N-back level</label>
+            <input id="nbackLevel" type="number" min="1" max="8" value="2" />
+          </div>
+          <div class="field">
+            <label for="patternDifficulty">Pattern difficulty</label>
+            <select id="patternDifficulty">
+              <option value="easy">Easy</option>
+              <option value="medium" selected>Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label for="matchingMode">Matching mode</label>
+            <select id="matchingMode">
+              <option value="strict" selected>Strict</option>
+              <option value="broad">Broad</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="ambiguityMode">Ambiguity handling</label>
+            <select id="ambiguityMode">
+              <option value="filter" selected>Filter ambiguous</option>
+              <option value="allow">Allow ambiguous</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="speechRate">Speech speed</label>
+          <div class="range-row">
+            <input id="speechRate" type="range" min="0.5" max="5" step="0.1" value="2.3" />
+            <div id="speechRateValue" class="range-value">2.3×</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="trialGap">Trial speed (gap between trials)</label>
+          <div class="range-row">
+            <input id="trialGap" type="range" min="0" max="3000" step="50" value="550" />
+            <div id="trialGapValue" class="range-value">550 ms</div>
+          </div>
+        </div>
+
+        <div class="field" id="sessionLengthField">
+          <label for="sessionLength">Trials per session</label>
+          <input id="sessionLength" type="number" min="50" max="500" value="100" />
+        </div>
+
+        <label class="checkbox">
+          <input id="unlimitedMode" type="checkbox" />
+          Unlimited session
+        </label>
+
+        <div class="field">
+          <label for="voiceSelect">Voice</label>
+          <select id="voiceSelect"></select>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <button id="startBtn" type="button">Start</button>
+          <button id="stopBtn" class="danger" type="button">Stop</button>
+        </div>
+
+        <div style="margin-top:10px;">
+          <button id="testVoiceBtn" class="secondary" type="button">Test voice</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Accuracy protections</h3>
+        <div class="tiny">
+          This version makes three hard changes: when ambiguity filtering is on, ambiguous trials are never admitted; generators reject any output whose parse-set leaves the intended difficulty ontology; and target/non-target construction retries across the full allowed ontology rather than relaxing into silent mismatch.
+        </div>
+      </div>
+    </aside>
+
+    <main class="main card">
+      <div class="topbar">
+        <div class="pill">Mode: <strong>Pure auditory number-series n-back</strong></div>
+        <div class="pill">Session: <strong id="sessionModeLabel">100 trials</strong></div>
+      </div>
+
+      <div class="display">
+        <section class="panel">
+          <h3>Current trial</h3>
+          <div class="current-series">
+            <div id="currentTrialTag" class="trial-tag">Waiting to start</div>
+            <div id="currentSeriesLine" class="series-line">—</div>
+
+            <div class="reference-box">
+              <div class="reference-title">N-back reference series</div>
+              <div id="nbackReferenceValue" class="reference-value">—</div>
+            </div>
+
+            <div class="reference-box">
+              <div class="reference-title">Primary parse set</div>
+              <div id="currentPrimaryValue" class="reference-value">—</div>
+            </div>
+
+            <div class="reference-box">
+              <div class="reference-title">Secondary parse set</div>
+              <div id="currentSecondaryValue" class="reference-value">—</div>
+            </div>
+
+            <div class="reference-box">
+              <div class="reference-title">Ambiguity status</div>
+              <div id="currentAmbiguityValue" class="reference-value">—</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h3>Series history</h3>
+          <div id="history" class="history"></div>
+        </section>
+      </div>
+
+      <div id="message" class="message">
+        Press <span class="warn" style="margin:0 6px;">Start</span> to begin.
+      </div>
+
+      <div class="tiny">
+        Audio uses numbers only. Visual display is reference only. The game advances automatically from one trial to the next and never waits for a response.
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const nbackLevelEl = document.getElementById('nbackLevel');
+    const speechRateEl = document.getElementById('speechRate');
+    const speechRateValueEl = document.getElementById('speechRateValue');
+    const trialGapEl = document.getElementById('trialGap');
+    const trialGapValueEl = document.getElementById('trialGapValue');
+    const patternDifficultyEl = document.getElementById('patternDifficulty');
+    const matchingModeEl = document.getElementById('matchingMode');
+    const ambiguityModeEl = document.getElementById('ambiguityMode');
+    const sessionLengthEl = document.getElementById('sessionLength');
+    const unlimitedModeEl = document.getElementById('unlimitedMode');
+    const sessionLengthFieldEl = document.getElementById('sessionLengthField');
+    const voiceSelectEl = document.getElementById('voiceSelect');
+
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const testVoiceBtn = document.getElementById('testVoiceBtn');
+
+    const trialCountEl = document.getElementById('trialCount');
+    const remainingCountEl = document.getElementById('remainingCount');
+    const nbackStatEl = document.getElementById('nbackStat');
+    const patternStatEl = document.getElementById('patternStat');
+    const sessionModeLabelEl = document.getElementById('sessionModeLabel');
+
+    const currentTrialTagEl = document.getElementById('currentTrialTag');
+    const currentSeriesLineEl = document.getElementById('currentSeriesLine');
+    const nbackReferenceValueEl = document.getElementById('nbackReferenceValue');
+    const currentPrimaryValueEl = document.getElementById('currentPrimaryValue');
+    const currentSecondaryValueEl = document.getElementById('currentSecondaryValue');
+    const currentAmbiguityValueEl = document.getElementById('currentAmbiguityValue');
+    const historyEl = document.getElementById('history');
+    const messageEl = document.getElementById('message');
+
+    const MAX_HISTORY = 120;
+    const MAX_BUILD_ATTEMPTS = 2500;
+
+    const state = {
+      running: false,
+      trialIndex: 0,
+      totalTrials: 100,
+      unlimited: false,
+      nback: 2,
+      speechRate: 2.3,
+      trialGapMs: 550,
+      patternDifficulty: 'medium',
+      matchingMode: 'strict',
+      ambiguityMode: 'filter',
+      utterance: null,
+      gapTimer: null,
+      history: [],
+      targetProbability: 0.30
+    };
+
+    function setMessage(html) { messageEl.innerHTML = html; }
+    function clamp(num, min, max) { return Math.max(min, Math.min(max, num)); }
+    function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function choice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function rawSeriesSignature(series) { return series.join('|'); }
+    function formatSeries(series) { return series.join('  ·  '); }
+    function differences(arr){ const out=[]; for(let i=1;i<arr.length;i++) out.push(arr[i]-arr[i-1]); return out; }
+    function setsIntersect(a, b){ for (const item of a) if (b.has(item)) return true; return false; }
+
+    function updateControlReadouts() {
+      speechRateValueEl.textContent = `${Number(speechRateEl.value).toFixed(1)}×`;
+      trialGapValueEl.textContent = `${Math.round(Number(trialGapEl.value))} ms`;
+      sessionLengthFieldEl.classList.toggle('hidden', unlimitedModeEl.checked);
+    }
+
+    function updateStats() {
+      trialCountEl.textContent = String(state.trialIndex);
+      remainingCountEl.textContent = state.unlimited ? '∞' : String(Math.max(0, state.totalTrials - state.trialIndex));
+      nbackStatEl.textContent = String(state.nback);
+      patternStatEl.textContent = state.patternDifficulty.charAt(0).toUpperCase() + state.patternDifficulty.slice(1);
+      sessionModeLabelEl.textContent = state.unlimited ? 'Unlimited' : `${state.totalTrials} trials`;
+    }
+
+    function stopPlayback() {
+      if (state.gapTimer) {
+        clearTimeout(state.gapTimer);
+        state.gapTimer = null;
+      }
+      speechSynthesis.cancel();
+      state.utterance = null;
+    }
+
+    function stopSession(manual = false) {
+      state.running = false;
+      stopPlayback();
+      if (manual) setMessage('Session stopped.');
+    }
+
+    function populateVoices() {
+      const voices = speechSynthesis.getVoices();
+      const current = voiceSelectEl.value;
+      voiceSelectEl.innerHTML = '';
+      const usable = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+      const pool = usable.length ? usable : voices;
+      pool.forEach((voice, idx) => {
+        const option = document.createElement('option');
+        option.value = voice.voiceURI;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        if ((!current && idx === 0) || voice.voiceURI === current) option.selected = true;
+        voiceSelectEl.appendChild(option);
+      });
+    }
+
+    speechSynthesis.onvoiceschanged = populateVoices;
+    populateVoices();
+
+    function getSelectedVoice() {
+      const voices = speechSynthesis.getVoices();
+      return voices.find(v => v.voiceURI === voiceSelectEl.value) || null;
+    }
+
+    // ===== Predicate layer =====
+    function isArithmetic(series){
+      const d = differences(series);
+      return d.every(x => x === d[0]) && d[0] !== 0;
+    }
+
+    function isAlternatingAB(series){
+      return series[0] === series[2] && series[2] === series[4] &&
+             series[1] === series[3] && series[3] === series[5] &&
+             series[0] !== series[1];
+    }
+
+    function isMirror(series){
+      return series[0] === series[5] && series[1] === series[4] && series[2] === series[3];
+    }
+
+    function isRepeat3(series){
+      return series[0] === series[3] && series[1] === series[4] && series[2] === series[5];
+    }
+
+    function isPlateauJump(series){
+      return series[0] === series[1] && series[1] === series[2] &&
+             series[3] === series[4] && series[4] === series[5] &&
+             series[0] !== series[3];
+    }
+
+    function isPairedRuns(series){
+      return series[0] === series[1] && series[2] === series[3] && series[4] === series[5] &&
+             series[0] !== series[2] && series[2] !== series[4];
+    }
+
+    function pairedRunsDirection(series){
+      const v = [series[0], series[2], series[4]];
+      if (v[1] - v[0] === v[2] - v[1] && v[0] !== v[1]) return v[1] > v[0] ? 'up' : 'down';
+      return null;
+    }
+
+    function isInterleavedArithmetic(series){
+      const odd = [series[0], series[2], series[4]];
+      const even = [series[1], series[3], series[5]];
+      const od = differences(odd);
+      const ed = differences(even);
+      return od.every(x => x === od[0]) && ed.every(x => x === ed[0]) && !isArithmetic(series);
+    }
+
+    function interleavedDirection(series){
+      const odd = [series[0], series[2], series[4]];
+      const even = [series[1], series[3], series[5]];
+      const od = odd[1] - odd[0];
+      const ed = even[1] - even[0];
+      const a = od > 0 ? 'up' : od < 0 ? 'down' : 'flat';
+      const b = ed > 0 ? 'up' : ed < 0 ? 'down' : 'flat';
+      return `${a}_${b}`;
+    }
+
+    function isQuadratic(series){
+      const d1 = differences(series);
+      const d2 = differences(d1);
+      return d2.length > 0 && d2.every(x => x === d2[0]) && d2[0] !== 0 && !isArithmetic(series);
+    }
+
+    function isBlockShiftRepeat(series){
+      const s = series[3] - series[0];
+      return s !== 0 && series[4] - series[1] === s && series[5] - series[2] === s;
+    }
+
+    function isReflectPlusOffset(series){
+      const s = series[3] - series[2];
+      return s !== 0 && series[4] - series[1] === s && series[5] - series[0] === s;
+    }
+
+    function isFibLike(series){
+      for (let i = 2; i < series.length; i++) {
+        if (series[i] !== series[i - 1] + series[i - 2]) return false;
+      }
+      return true;
+    }
+
+    function fibPlusConstValue(series){
+      const vals = [];
+      for (let i = 2; i < series.length; i++) vals.push(series[i] - series[i - 1] - series[i - 2]);
+      return vals.length && vals.every(v => v === vals[0]) ? vals[0] : null;
+    }
+
+    function isGeometric(series){
+      if (series.includes(0)) return false;
+      const ratios = [];
+      for (let i = 1; i < series.length; i++) ratios.push(series[i] / series[i - 1]);
+      return ratios.every(r => r === ratios[0]) && ratios[0] !== 1;
+    }
+
+    function isPairSumChain(series){
+      return series[3] === series[0] + series[1] &&
+             series[4] === series[1] + series[2] &&
+             series[5] === series[0] + series[1] + series[2];
+    }
+
+    function isCyclicPairSums(series){
+      return series[3] === series[0] + series[1] &&
+             series[4] === series[1] + series[2] &&
+             series[5] === series[2] + series[0];
+    }
+
+    function isPairProducts(series){
+      return series[3] === series[0] * series[1] &&
+             series[4] === series[1] * series[2] &&
+             series[5] === series[2] * series[0];
+    }
+
+    // ===== Multi-parse classifier =====
+    function classifySeriesMulti(series){
+      const primaryCandidates = [];
+
+      if (isAlternatingAB(series)) primaryCandidates.push('alternating_ab');
+      if (isMirror(series)) primaryCandidates.push('mirror');
+      if (isRepeat3(series)) primaryCandidates.push('repeat3');
+
+      if (isPlateauJump(series)) {
+        primaryCandidates.push(series[3] > series[0] ? 'plateau_jump_up' : 'plateau_jump_down');
+      }
+
+      if (isPairedRuns(series)) {
+        const dir = pairedRunsDirection(series);
+        if (dir === 'up') primaryCandidates.push('paired_runs_up');
+        if (dir === 'down') primaryCandidates.push('paired_runs_down');
+      }
+
+      if (isArithmetic(series)) {
+        primaryCandidates.push(differences(series)[0] > 0 ? 'arithmetic_up' : 'arithmetic_down');
+      }
+
+      if (isInterleavedArithmetic(series)) {
+        const dir = interleavedDirection(series);
+        if (dir === 'up_up') primaryCandidates.push('interleaved_up_up');
+        if (dir === 'up_down') primaryCandidates.push('interleaved_up_down');
+      }
+
+      if (isQuadratic(series)) {
+        primaryCandidates.push(differences(differences(series))[0] > 0 ? 'quadratic_up' : 'quadratic_down');
+      }
+
+      if (isBlockShiftRepeat(series)) {
+        primaryCandidates.push((series[3] - series[0]) > 0 ? 'block_shift_repeat_up' : 'block_shift_repeat_down');
+      }
+
+      if (isReflectPlusOffset(series)) {
+        primaryCandidates.push((series[3] - series[2]) > 0 ? 'reflect_plus_offset_up' : 'reflect_plus_offset_down');
+      }
+
+      if (isFibLike(series)) primaryCandidates.push('fib_like');
+
+      const fibConst = fibPlusConstValue(series);
+      if (fibConst !== null && fibConst > 0) primaryCandidates.push('fib_plus_const_up');
+
+      if (isGeometric(series) && series[1] > series[0]) primaryCandidates.push('geometric_up');
+
+      if (isPairSumChain(series)) primaryCandidates.push('pair_sum_chain');
+      if (isCyclicPairSums(series)) primaryCandidates.push('cyclic_pair_sums');
+      if (isPairProducts(series)) primaryCandidates.push('pair_products');
+
+      const secondaries = new Set();
+      for (const primary of primaryCandidates) secondaries.add(primaryToSecondary(primary));
+
+      if (primaryCandidates.includes('arithmetic_up') || primaryCandidates.includes('arithmetic_down')) secondaries.add('affine_linear');
+      if (primaryCandidates.includes('alternating_ab') || primaryCandidates.includes('repeat3')) secondaries.add('repeat_family');
+      if (primaryCandidates.includes('mirror')) secondaries.add('symmetry_family');
+      if (primaryCandidates.includes('paired_runs_up') || primaryCandidates.includes('paired_runs_down')) secondaries.add('paired_family');
+      if (primaryCandidates.includes('plateau_jump_up') || primaryCandidates.includes('plateau_jump_down')) secondaries.add('plateau_family');
+      if (primaryCandidates.includes('interleaved_up_up') || primaryCandidates.includes('interleaved_up_down')) secondaries.add('interleaved_family');
+      if (primaryCandidates.includes('quadratic_up') || primaryCandidates.includes('quadratic_down')) secondaries.add('quadratic_family');
+      if (
+        primaryCandidates.includes('block_shift_repeat_up') ||
+        primaryCandidates.includes('block_shift_repeat_down') ||
+        primaryCandidates.includes('reflect_plus_offset_up') ||
+        primaryCandidates.includes('reflect_plus_offset_down')
+      ) secondaries.add('transform_block_family');
+      if (primaryCandidates.includes('fib_like') || primaryCandidates.includes('fib_plus_const_up')) secondaries.add('recurrence_family');
+      if (primaryCandidates.includes('geometric_up')) secondaries.add('multiplicative_family');
+      if (
+        primaryCandidates.includes('pair_sum_chain') ||
+        primaryCandidates.includes('cyclic_pair_sums') ||
+        primaryCandidates.includes('pair_products')
+      ) secondaries.add('composite_relation_family');
+
+      return {
+        primaryCandidates: [...new Set(primaryCandidates)],
+        secondaryCandidates: [...secondaries],
+        ambiguous: new Set(primaryCandidates).size > 1
+      };
+    }
+
+    const SECONDARY_TO_PRIMARY = {
+      affine_linear: ['arithmetic_up', 'arithmetic_down'],
+      repeat_family: ['alternating_ab', 'repeat3'],
+      symmetry_family: ['mirror'],
+      plateau_family: ['plateau_jump_up', 'plateau_jump_down'],
+      paired_family: ['paired_runs_up', 'paired_runs_down'],
+      interleaved_family: ['interleaved_up_up', 'interleaved_up_down'],
+      quadratic_family: ['quadratic_up', 'quadratic_down'],
+      transform_block_family: ['block_shift_repeat_up','block_shift_repeat_down','reflect_plus_offset_up','reflect_plus_offset_down'],
+      recurrence_family: ['fib_like', 'fib_plus_const_up'],
+      multiplicative_family: ['geometric_up'],
+      composite_relation_family: ['pair_sum_chain','cyclic_pair_sums','pair_products']
+    };
+
+    function primaryToSecondary(primary){
+      for (const [secondary, primaries] of Object.entries(SECONDARY_TO_PRIMARY)) {
+        if (primaries.includes(primary)) return secondary;
+      }
+      return primary;
+    }
+
+    // ===== Exact class-closed generators =====
+    function arithmeticSeries(start, step){ return Array.from({length: 6}, (_, i) => start + i * step); }
+    function interleave(a, b){ return [a[0], b[0], a[1], b[1], a[2], b[2]]; }
+
+    function generateArithmeticUp(){
+      const step = randInt(1, 8);
+      const start = randInt(0, 99 - 5 * step);
+      return arithmeticSeries(start, step);
+    }
+    function generateArithmeticDown(){
+      const step = randInt(1, 8);
+      const start = randInt(5 * step, 99);
+      return arithmeticSeries(start, -step);
+    }
+    function generateAlternatingAB(){
+      const a = randInt(0, 60);
+      let b = randInt(0, 60);
+      while (b === a) b = randInt(0, 60);
+      return [a, b, a, b, a, b];
+    }
+    function generateMirror(){
+      const a = randInt(0, 35), b = randInt(0, 35), c = randInt(0, 35);
+      return [a, b, c, c, b, a];
+    }
+    function generateRepeat3(){
+      const a = randInt(0, 40), b = randInt(0, 40), c = randInt(0, 40);
+      return [a, b, c, a, b, c];
+    }
+    function generatePlateauJumpUp(){
+      const a = randInt(0, 70), jump = randInt(2, 20);
+      return [a, a, a, a + jump, a + jump, a + jump];
+    }
+    function generatePlateauJumpDown(){
+      const a = randInt(20, 99), jump = randInt(2, 20);
+      return [a, a, a, a - jump, a - jump, a - jump];
+    }
+    function generatePairedRunsUp(){
+      const step = randInt(1, 7), start = randInt(0, 99 - 2 * step);
+      return [start, start, start + step, start + step, start + 2 * step, start + 2 * step];
+    }
+    function generatePairedRunsDown(){
+      const step = randInt(1, 7), start = randInt(2 * step, 99);
+      return [start, start, start - step, start - step, start - 2 * step, start - 2 * step];
+    }
+    function generateInterleavedUpUp(){
+      const oddStep = randInt(1, 6), evenStep = randInt(1, 6);
+      const oddStart = randInt(0, 99 - 2 * oddStep);
+      const evenStart = randInt(0, 99 - 2 * evenStep);
+      return interleave(
+        [oddStart, oddStart + oddStep, oddStart + 2 * oddStep],
+        [evenStart, evenStart + evenStep, evenStart + 2 * evenStep]
+      );
+    }
+    function generateInterleavedUpDown(){
+      const oddStep = randInt(1, 6), evenStep = randInt(1, 6);
+      const oddStart = randInt(0, 99 - 2 * oddStep);
+      const evenStart = randInt(2 * evenStep, 99);
+      return interleave(
+        [oddStart, oddStart + oddStep, oddStart + 2 * oddStep],
+        [evenStart, evenStart - evenStep, evenStart - 2 * evenStep]
+      );
+    }
+    function generateQuadraticUp(){
+      let cur = randInt(0, 18), diff = randInt(1, 4);
+      const diffStep = randInt(1, 3), out = [cur];
+      for (let i = 1; i < 6; i++) { cur += diff; out.push(cur); diff += diffStep; }
+      return out;
+    }
+    function generateQuadraticDown(){
+      let cur = randInt(40, 99), diff = -randInt(2, 6);
+      const diffStep = -randInt(1, 2), out = [cur];
+      for (let i = 1; i < 6; i++) { cur += diff; out.push(cur); diff += diffStep; }
+      return out;
+    }
+    function generateBlockShiftRepeatUp(){
+      const a = randInt(0, 45), b = randInt(0, 45), c = randInt(0, 45), shift = randInt(2, 20);
+      return [a, b, c, a + shift, b + shift, c + shift];
+    }
+    function generateBlockShiftRepeatDown(){
+      const a = randInt(20, 65), b = randInt(20, 65), c = randInt(20, 65), shift = randInt(2, 20);
+      return [a, b, c, a - shift, b - shift, c - shift];
+    }
+    function generateReflectPlusOffsetUp(){
+      const a = randInt(0, 35), b = randInt(0, 35), c = randInt(0, 35), shift = randInt(2, 20);
+      return [a, b, c, c + shift, b + shift, a + shift];
+    }
+    function generateReflectPlusOffsetDown(){
+      const a = randInt(20, 55), b = randInt(20, 55), c = randInt(20, 55), shift = randInt(2, 20);
+      return [a, b, c, c - shift, b - shift, a - shift];
+    }
+    function generateFibLike(){
+      const a = randInt(0, 8), b = randInt(1, 9), out = [a, b];
+      while (out.length < 6) out.push(out[out.length - 1] + out[out.length - 2]);
+      return out;
+    }
+    function generateGeometricUp(){
+      const ratio = choice([2, 3]), start = randInt(1, ratio === 2 ? 3 : 1), out = [start];
+      while (out.length < 6) out.push(out[out.length - 1] * ratio);
+      return out;
+    }
+    function generatePairSumChain(){
+      const a = randInt(0, 15), b = randInt(0, 15), c = randInt(0, 15);
+      return [a, b, c, a + b, b + c, a + b + c];
+    }
+    function generateCyclicPairSums(){
+      const a = randInt(0, 20), b = randInt(0, 20), c = randInt(0, 20);
+      return [a, b, c, a + b, b + c, c + a];
+    }
+    function generatePairProducts(){
+      const a = randInt(1, 6), b = randInt(1, 6), c = randInt(1, 6);
+      return [a, b, c, a * b, b * c, c * a];
+    }
+    function generateFibPlusConstUp(){
+      const a = randInt(0, 6), b = randInt(1, 7), k = randInt(1, 4), out = [a, b];
+      while (out.length < 6) out.push(out[out.length - 1] + out[out.length - 2] + k);
+      return out;
+    }
+
+    const generatorByPrimary = {
+      arithmetic_up: generateArithmeticUp,
+      arithmetic_down: generateArithmeticDown,
+      alternating_ab: generateAlternatingAB,
+      mirror: generateMirror,
+      repeat3: generateRepeat3,
+      plateau_jump_up: generatePlateauJumpUp,
+      plateau_jump_down: generatePlateauJumpDown,
+      paired_runs_up: generatePairedRunsUp,
+      paired_runs_down: generatePairedRunsDown,
+      interleaved_up_up: generateInterleavedUpUp,
+      interleaved_up_down: generateInterleavedUpDown,
+      quadratic_up: generateQuadraticUp,
+      quadratic_down: generateQuadraticDown,
+      block_shift_repeat_up: generateBlockShiftRepeatUp,
+      block_shift_repeat_down: generateBlockShiftRepeatDown,
+      reflect_plus_offset_up: generateReflectPlusOffsetUp,
+      reflect_plus_offset_down: generateReflectPlusOffsetDown,
+      fib_like: generateFibLike,
+      geometric_up: generateGeometricUp,
+      pair_sum_chain: generatePairSumChain,
+      cyclic_pair_sums: generateCyclicPairSums,
+      pair_products: generatePairProducts,
+      fib_plus_const_up: generateFibPlusConstUp
+    };
+
+    const PRIMARY_POOLS = {
+      easy: [
+        'arithmetic_up','arithmetic_down','alternating_ab','mirror','repeat3',
+        'plateau_jump_up','plateau_jump_down','paired_runs_up','paired_runs_down'
+      ],
+      medium: [
+        'interleaved_up_up','interleaved_up_down','quadratic_up','quadratic_down',
+        'block_shift_repeat_up','block_shift_repeat_down','reflect_plus_offset_up',
+        'reflect_plus_offset_down','fib_like','geometric_up'
+      ],
+      hard: [
+        'pair_sum_chain','cyclic_pair_sums','pair_products','fib_plus_const_up'
+      ]
+    };
+
+    function getPrimaryPool(difficulty){ return PRIMARY_POOLS[difficulty]; }
+    function allowedPrimarySetForDifficulty(difficulty){ return new Set(getPrimaryPool(difficulty)); }
+    function seriesMatchesAllowedDifficulty(info, difficulty){
+      return info.primaryCandidates.some(p => allowedPrimarySetForDifficulty(difficulty).has(p));
+    }
+
+    function generateVerifiedSeriesForPrimary(primary, avoidRaw = new Set(), difficulty = null, filterAmbiguous = true) {
+      const generator = generatorByPrimary[primary];
+      if (!generator) throw new Error(`No generator for primary ${primary}`);
+
+      for (let attempt = 0; attempt < MAX_BUILD_ATTEMPTS; attempt++) {
+        const series = generator();
+        const raw = rawSeriesSignature(series);
+        if (avoidRaw.has(raw)) continue;
+
+        const info = classifySeriesMulti(series);
+        if (!info.primaryCandidates.includes(primary)) continue;
+        if (difficulty && !seriesMatchesAllowedDifficulty(info, difficulty)) continue;
+        if (filterAmbiguous && info.ambiguous) continue;
+
+        return { series, info };
+      }
+
+      return null;
+    }
+
+    function targetKeys(reference){
+      return state.matchingMode === 'strict'
+        ? new Set(reference.primaryCandidates)
+        : new Set(reference.secondaryCandidates);
+    }
+
+    function currentKeys(info){
+      return state.matchingMode === 'strict'
+        ? new Set(info.primaryCandidates)
+        : new Set(info.secondaryCandidates);
+    }
+
+    function buildTargetFromReference(reference, difficulty, filterAmbiguous, avoidRaw){
+      const refKeys = targetKeys(reference);
+      const pool = getPrimaryPool(difficulty);
+      const primaryCandidates = pool.filter(primary => {
+        const builtKey = state.matchingMode === 'strict'
+          ? new Set([primary])
+          : new Set([primaryToSecondary(primary)]);
+        return setsIntersect(builtKey, refKeys);
+      }).sort(() => Math.random() - 0.5);
+
+      for (const primary of primaryCandidates) {
+        const built = generateVerifiedSeriesForPrimary(primary, avoidRaw, difficulty, filterAmbiguous);
+        if (!built) continue;
+        if (setsIntersect(currentKeys(built.info), refKeys)) return built;
+      }
+
+      return null;
+    }
+
+    function buildNonTarget(reference, difficulty, filterAmbiguous, avoidRaw){
+      const refKeys = targetKeys(reference);
+      const pool = [...getPrimaryPool(difficulty)].sort(() => Math.random() - 0.5);
+
+      for (const primary of pool) {
+        const built = generateVerifiedSeriesForPrimary(primary, avoidRaw, difficulty, filterAmbiguous);
+        if (!built) continue;
+        if (!setsIntersect(currentKeys(built.info), refKeys)) return built;
+      }
+
+      return null;
+    }
+
+    function buildInitialTrial(difficulty, filterAmbiguous, avoidRaw){
+      const pool = [...getPrimaryPool(difficulty)].sort(() => Math.random() - 0.5);
+      for (const primary of pool) {
+        const built = generateVerifiedSeriesForPrimary(primary, avoidRaw, difficulty, filterAmbiguous);
+        if (built) return built;
+      }
+      return null;
+    }
+
+    function buildNextTrial() {
+      const idx = state.history.length;
+      const canTarget = idx >= state.nback;
+      const reference = canTarget ? state.history[idx - state.nback] : null;
+      const shouldTarget = canTarget && Math.random() < state.targetProbability;
+      const filterAmbiguous = state.ambiguityMode === 'filter';
+
+      const avoidRaw = new Set();
+      if (idx > 0) avoidRaw.add(rawSeriesSignature(state.history[idx - 1].series));
+      if (reference) avoidRaw.add(rawSeriesSignature(reference.series));
+
+      let built = null;
+
+      if (shouldTarget) {
+        built = buildTargetFromReference(reference, state.patternDifficulty, filterAmbiguous, avoidRaw);
+        if (!built) {
+          throw new Error('Unable to build a clean target trial under current constraints.');
+        }
+        return {
+          index: idx + 1,
+          series: built.series,
+          primaryCandidates: built.info.primaryCandidates,
+          secondaryCandidates: built.info.secondaryCandidates,
+          ambiguous: built.info.ambiguous,
+          isTarget: true
+        };
+      }
+
+      if (reference) {
+        built = buildNonTarget(reference, state.patternDifficulty, filterAmbiguous, avoidRaw);
+        if (!built) {
+          throw new Error('Unable to build a clean non-target trial under current constraints.');
+        }
+      } else {
+        built = buildInitialTrial(state.patternDifficulty, filterAmbiguous, avoidRaw);
+        if (!built) {
+          throw new Error('Unable to build an initial clean trial under current constraints.');
+        }
+      }
+
+      return {
+        index: idx + 1,
+        series: built.series,
+        primaryCandidates: built.info.primaryCandidates,
+        secondaryCandidates: built.info.secondaryCandidates,
+        ambiguous: built.info.ambiguous,
+        isTarget: false
+      };
+    }
+
+    function renderHistory() {
+      historyEl.innerHTML = '';
+      const currentIndex = state.history.length - 1;
+      const refIndex = currentIndex - state.nback;
+      const items = state.history.slice(-MAX_HISTORY);
+
+      items.forEach(trial => {
+        const absoluteIndex = trial.index - 1;
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        if (absoluteIndex === currentIndex) item.classList.add('current');
+        if (absoluteIndex === refIndex) item.classList.add('ref');
+
+        const badge = document.createElement('div');
+        badge.className = 'history-badge';
+        badge.textContent = `T${trial.index}`;
+
+        const content = document.createElement('div');
+        const series = document.createElement('div');
+        series.className = 'history-series';
+        series.textContent = trial.series.join('  ·  ');
+
+        const meta = document.createElement('div');
+        meta.className = 'history-meta';
+        const activeKeys = state.matchingMode === 'strict'
+          ? trial.primaryCandidates.join(', ')
+          : trial.secondaryCandidates.join(', ');
+        const ambiguity = trial.ambiguous ? 'ambiguous' : 'clean';
+
+        if (absoluteIndex === currentIndex && absoluteIndex === refIndex) {
+          meta.textContent = `Current + n-back reference | ${activeKeys} | ${ambiguity}`;
+        } else if (absoluteIndex === currentIndex) {
+          meta.textContent = `Current | ${activeKeys} | ${ambiguity}`;
+        } else if (absoluteIndex === refIndex) {
+          meta.textContent = `${state.nback}-back reference | ${activeKeys} | ${ambiguity}`;
+        } else {
+          meta.textContent = `${trial.primaryCandidates.join(', ')} | ${trial.secondaryCandidates.join(', ')} | ${ambiguity}`;
+        }
+
+        content.appendChild(series);
+        content.appendChild(meta);
+        item.appendChild(badge);
+        item.appendChild(content);
+        historyEl.appendChild(item);
+      });
+
+      historyEl.scrollTop = historyEl.scrollHeight;
+    }
+
+    function renderCurrent() {
+      const current = state.history[state.history.length - 1];
+      const ref = state.history[state.history.length - 1 - state.nback];
+
+      currentTrialTagEl.textContent = current ? `Trial ${current.index}` : 'Waiting to start';
+      currentSeriesLineEl.textContent = current ? formatSeries(current.series) : '—';
+      nbackReferenceValueEl.textContent = ref ? formatSeries(ref.series) : '—';
+      currentPrimaryValueEl.textContent = current ? current.primaryCandidates.join(', ') : '—';
+      currentSecondaryValueEl.textContent = current ? current.secondaryCandidates.join(', ') : '—';
+      currentAmbiguityValueEl.textContent = current ? (current.ambiguous ? 'Ambiguous' : 'Clean') : '—';
+
+      renderHistory();
+    }
+
+    function speakSeries(series, onDone) {
+      const utterance = new SpeechSynthesisUtterance(series.join(', '));
+      const voice = getSelectedVoice();
+      if (voice) utterance.voice = voice;
+      utterance.rate = state.speechRate;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      utterance.lang = voice?.lang || 'en-US';
+
+      utterance.onend = () => { if (state.running) onDone(); };
+      utterance.onerror = () => { if (state.running) onDone(); };
+
+      state.utterance = utterance;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utterance);
+    }
+
+    function runNextTrial() {
+      if (!state.running) return;
+
+      if (!state.unlimited && state.trialIndex >= state.totalTrials) {
+        stopSession(false);
+        setMessage('<span class="good">Session complete.</span> Finished all configured trials.');
+        return;
+      }
+
+      let trial;
+      try {
+        trial = buildNextTrial();
+      } catch (err) {
+        stopSession(false);
+        setMessage(`<span class="bad">Stopped.</span> ${err.message} Try broad mode or allow ambiguous trials.`);
+        return;
+      }
+
+      state.history.push(trial);
+      state.trialIndex += 1;
+
+      renderCurrent();
+      updateStats();
+
+      const activeKeys = state.matchingMode === 'strict'
+        ? trial.primaryCandidates.join(', ')
+        : trial.secondaryCandidates.join(', ');
+      setMessage(`Running trial ${trial.index}. Active matching keys are <code>${activeKeys}</code> in <code>${state.matchingMode}</code> mode.`);
+
+      speakSeries(trial.series, () => {
+        if (!state.running) return;
+        state.gapTimer = setTimeout(() => {
+          state.gapTimer = null;
+          runNextTrial();
+        }, state.trialGapMs);
+      });
+    }
+
+    function startSession() {
+      stopPlayback();
+
+      state.nback = clamp(parseInt(nbackLevelEl.value || '2', 10), 1, 8);
+      state.speechRate = clamp(parseFloat(speechRateEl.value || '2.3'), 0.5, 5);
+      state.trialGapMs = clamp(parseInt(trialGapEl.value || '550', 10), 0, 3000);
+      state.patternDifficulty = patternDifficultyEl.value;
+      state.matchingMode = matchingModeEl.value;
+      state.ambiguityMode = ambiguityModeEl.value;
+      state.unlimited = unlimitedModeEl.checked;
+      state.totalTrials = clamp(parseInt(sessionLengthEl.value || '100', 10), 50, 500);
+
+      state.history = [];
+      state.trialIndex = 0;
+      state.running = true;
+
+      updateStats();
+      renderCurrent();
+      setMessage('Session started. This version uses hard ambiguity exclusion and refuses to silently degrade into mismatched fallback behavior.');
+      runNextTrial();
+    }
+
+    function testVoice() {
+      stopPlayback();
+      const utterance = new SpeechSynthesisUtterance('3, 7, 11, 15, 19, 23');
+      const voice = getSelectedVoice();
+      if (voice) utterance.voice = voice;
+      utterance.rate = clamp(parseFloat(speechRateEl.value || '2.3'), 0.5, 5);
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      utterance.lang = voice?.lang || 'en-US';
+      speechSynthesis.speak(utterance);
+    }
+
+    speechRateEl.addEventListener('input', updateControlReadouts);
+    trialGapEl.addEventListener('input', updateControlReadouts);
+    unlimitedModeEl.addEventListener('change', updateControlReadouts);
+
+    startBtn.addEventListener('click', startSession);
+    stopBtn.addEventListener('click', () => stopSession(true));
+    testVoiceBtn.addEventListener('click', testVoice);
+
+    populateVoices();
+    updateControlReadouts();
+    updateStats();
+    renderCurrent();
+  </script>
+</body>
+</html>
